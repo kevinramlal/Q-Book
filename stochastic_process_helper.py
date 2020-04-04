@@ -46,7 +46,7 @@ def market_dir(n):
 
 
 ######SIMPLY ORDER ENTRY - MODEL 1 
-def market_order_poisson(num_orders = 100,time = 30,lambda_ = 0.25,q = 5):
+def market_order_poisson(num_orders,time,lambda_ = 0.25,q = 5):
     """
     time - max length of time for trading
     q - standardized amount per market order (default to 5)
