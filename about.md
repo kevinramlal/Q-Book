@@ -7,7 +7,17 @@ There are several important models in the price discovery process - each wit
 
 We start with a simple framework, as follows:
 
-1. There is a single security that can take on one of two values $V_H$ or $V_L$ where $V_H > V_L$.
-2. You are the market-maker and you see order arrivals, one at time. 
-3. There are two types of traders placing these orders, an **informed trader** who knows what the true value of the security, and a **liqudity trader** who has no knowledge of the true value.
-4. The probability that any given order comes from an informed trader 
+1. There is a single security that has a fair value of one of two possible values, $V_H$ with probability $\theta$ or $V_L$ with probability $(1-\theta)$ where $V_H > V_L$. 
+2. Currently,before any market orders are observed, it is trading at $V_0$ which is the expected value computed as follows:
+$$V_0 =  \theta V_H+ (1-\theta) V_L$$.
+
+We see that depeding on $\theta$, $V_L \leq V_0 \leq V_H$. 
+3. Market Orders arrive one at a time.
+ 
+4. There are two types of traders placing these orders, an **informed trader** who **knows what the true value of the security**, and a **liqudity trader** who **has no knowledge of the true value**.
+
+5. The probability that any given order comes from an informed trader is $\pi$ and coversely the probability that any given order froms a liquidity trader is $1-\pi$. 
+
+6. If the fair value of the security is $V_H$, the informed trader will buy with probabil
+
+Right away, we can glean some useful dynamics! Suppose that the true value of the security is $V_H$, 
