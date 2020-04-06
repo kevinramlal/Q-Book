@@ -24,8 +24,8 @@ class Book:
         Add in more functionality to have imbalance
         """
         self.bid_sched = [self.mid-0.01*i for i in range(1,11,1)] #10 levels deep
-        self.bid_vol_sched = [int(100 - 10*i) for i in range(10)] #exponentially decreasing vol sched
-        return defaultdict(float,(zip(self.bid_sched,self.bid_vol_sched)))
+        self.bid_vol_sched = [[int(100 - 10*i)] for i in range(10)] #exponentially decreasing vol sched
+        return defaultdict(list,(zip(self.bid_sched,self.bid_vol_sched)))
         
 
     def ask_side_gen(self):
@@ -34,8 +34,8 @@ class Book:
         Add in more functionality to have imbalance
         """
         self.ask_sched = [self.mid+0.01*i for i in range(1,11,1)] #10 levels deep
-        self.ask_vol_sched = [int(100 - 10*i) for i in range(10)] #exponentially decreasing vol sched
-        return defaultdict(float,(zip(self.ask_sched,self.ask_vol_sched)))
+        self.ask_vol_sched = [[int(100 - 10*i)] for i in range(10)] #exponentially decreasing vol sched
+        return defaultdict(list,(zip(self.ask_sched,self.ask_vol_sched)))
 
     def generate_book(self):
         """
@@ -46,13 +46,13 @@ class Book:
         bid_side = self.bid_side
 
         #remove empty portions
-        ask_side = {k:v for k,v in ask_side.items() if v != 0}
-        bid_side = {k:v for k,v in bid_side.items() if v != 0}
+        # ask_side = {k:v for k,v in ask_side.items() if np.sum(v) != 0}
+        # bid_side = {k:v for k,v in bid_side.items() if np.sum(v) != 0}
 
         #Initialize numpy arrays
      
 
-        book = pd.DataFrame()
+        book_gen = pd.DataFrame()
         bids = list(bid_side.keys())
         bids.sort(reverse = True)
         bid_vols = pd.Series([bid_side[k] for k in bids ])
@@ -65,14 +65,14 @@ class Book:
         asks = pd.Series(asks)
 
         levels = max(len(bids),len(asks))
-        book['Level'] = np.arange(1,levels,1)
+        book_gen['Level'] = np.arange(1,levels,1)
 
-        book['Bids'] = bids
-        book['Bid_Vol'] = bid_vols
-        book['Asks'] = asks
-        book['Ask_Vols'] = ask_vols
-        
-        return book
+        book_gen['Bids'] = bids
+        book_gen['Bid_Vol'] = bid_vols
+        book_gen['Asks'] = asks
+        book_gen['Ask_Vols'] = ask_vols
+        self.book = book_gen
+        return book_gen.to_html(index = None)
         
     def display_book(self):
         self.book = self.generate_book()
@@ -85,22 +85,24 @@ class Book:
             if type == 'MKT':
                 avg_price = 0
                 
-                for k,v in self.ask_side.items(): 
-                    new_amount = max(0,amount-v)
+                for k in self.ask_side.keys(): 
+                    v = self.ask_side[k]
+                    for q in range(len(v)): #v is a qqueue
+                        new_amount = max(0,amount-v[q])
                 
-                    if new_amount == 0:
-                        avg_price += amount*k
+                        if new_amount == 0:
+                            avg_price += amount*k
                         
-                        self.ask_side[k] = v - amount
-                        msg = "Executed BUY for " + str(amount) + " at price: " + str(avg_price/total_amount)
-                        return msg
-                    else:
-                        avg_price += k*v
-                        amount = new_amount
-                        self.ask_side[k] = 0                   
+                            self.ask_side[k][q] = v[q] - amount
+                            msg = "Executed BUY for " + str(amount) + " at price: " + str(avg_price/total_amount)
+                            return msg
+                        else:
+                            avg_price += k*v[q]
+                            amount = new_amount
+                            self.ask_side[k][q] = 0                   
                 
             elif type =='LMT':
-                self.bid_side[price] += amount
+                self.bid_side[price].append(amount)
                 msg = "Entered Limit Order to BUY " + str(amount) + " at price: " + str(price)
                 return msg
             else:
@@ -112,25 +114,28 @@ class Book:
                 
                 avg_price = 0
                 
-                for k,v in self.bid_side.items(): 
-                    new_amount = max(0,amount-v)
+                for k in self.bid_side.keys(): 
+                    v = self.bid_side[k]
+                    for q in range(len(v)): #v is a qqueue
+                        new_amount = max(0,amount-v[q])
                 
-                    if new_amount == 0:
-                        avg_price += amount*k
+                        if new_amount == 0:
+                            avg_price += amount*k
                         
-                        self.bid_side[k] = v - amount
-                        msg = "Executed SELL for "+ str(amount)+ " at price: " + str(avg_price/total_amount)
-                        return msg
-                    else:
-                        avg_price += k*v
-                        amount = new_amount
-                        self.bid_side[k] = 0                   
-                
+                            self.bid_side[k][q] = v[q] - amount
+                            msg = "Executed SELL for " + str(amount) + " at price: " + str(avg_price/total_amount)
+                            return msg
+                        else:
+                            avg_price += k*v[q]
+                            amount = new_amount
+                            self.bid_side[k][q] = 0                       
+                   
                 
             elif type =='LMT':
-                self.ask_side[price] += amount
-                msg = "Entered Limit Order to SELL " + str(amount) + "at " + str(price)
+                self.ask_side[price].append(amount)
+                msg = "Entered Limit Order to SELL " + str(amount) + " at price: " + str(price)
                 return msg
+            
             else:
                 print("Please enter value type: either 'MKT' or 'LMT'")
                 return None
@@ -140,7 +145,42 @@ class Book:
             return None
 
 
+def generate_book(book):
+    """
+    Always show the top 10 - if none then it should be 0
+    """
 
+    ask_side = book.ask_side
+    bid_side = book.bid_side
+
+    #remove empty portions
+    # ask_side = {k:v for k,v in ask_side.items() if np.sum(v) != 0}
+    # bid_side = {k:v for k,v in bid_side.items() if np.sum(v) != 0}
+
+    #Initialize numpy arrays
+ 
+
+    book = pd.DataFrame()
+    bids = list(bid_side.keys())
+    bids.sort(reverse = True)
+    bid_vols = pd.Series([bid_side[k] for k in bids ])
+    bids = pd.Series(bids)
+
+
+    asks = list(ask_side.keys())
+    asks.sort()
+    ask_vols = pd.Series([ask_side[k] for k in asks ])
+    asks = pd.Series(asks)
+
+    levels = max(len(bids),len(asks))
+    book['Level'] = np.arange(1,levels,1)
+
+    book['Bids'] = bids
+    book['Bid_Vol'] = bid_vols
+    book['Asks'] = asks
+    book['Ask_Vols'] = ask_vols
+    
+    return book
 
 
 
