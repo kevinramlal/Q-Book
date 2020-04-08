@@ -8,7 +8,12 @@ from IPython.display import display,HTML
 from IPython.display import clear_output
 import ipywidgets as widgets 
 
-def main_loop(time,num_market = 50, num_limit = 50,display_live = False ):
+# default = {'time':30 ,'num_market':50, 'lambda_market': 2, 'vol_mkt': 10, 'num_limit': 50, 'lambda_limit':5,  'vol_lmt' :10}
+default = {'time':30 ,'lambda_market': 2, 'vol_mkt': 10, 'lambda_limit':5,  'vol_lmt' :10}
+
+# class Q_Book():
+#     default = {'time':30 ,'num_market':50, 'lambda_market': 0.25, 'vol_mkt': 10, 'num_limit': 50, 'lambda_limit':0.25,  'vol_lmt' :10}
+def main_loop(time , lambda_market, vol_mkt,  lambda_limit, vol_lmt):
     """
     gui display
     """
@@ -20,17 +25,16 @@ def main_loop(time,num_market = 50, num_limit = 50,display_live = False ):
     dict_om = {}
 
     #initialize market_orders
-    market_orders = market_order_poisson(num_market,time)
+    market_orders = market_order_poisson(time, lambda_market,vol_mkt)
 
     #need to find a way to standardize inputs 
-    limit_orders = limit_order_poisson(num_limit,time,0.25,5,book.bid_sched,book.ask_sched)
+    limit_orders = limit_order_poisson(time,lambda_limit,vol_lmt,book.bid_sched,book.ask_sched)
 
-    time_step = int(0)
-    
+   
     msgs = []
     lmts = []
 
-   
+    time_step = 0
     dict_book[time_step] =  book.generate_book()
     dict_om[time_step] =  pd.DataFrame(msgs,columns = [' Market Orders'])
     dict_lm[time_step] = pd.DataFrame(lmts,columns = ['Limit Orders'])
@@ -45,17 +49,16 @@ def main_loop(time,num_market = 50, num_limit = 50,display_live = False ):
         #Market Orders
         for i in m_orders:
             if i:
-                msgs.append(book.order_enter('BUY',5))
+                msgs.append(book.order_enter('BUY',vol_mkt))
             else:
-                msgs.append(book.order_enter('SELL',5))
+                msgs.append(book.order_enter('SELL',vol_mkt))
         #Limit Orders        
         for i in l_orders:
             if i[0]:
-                lmts.append(book.order_enter('BUY',5,price = i[1],type = 'LMT'))
+                lmts.append(book.order_enter('BUY',vol_lmt,price = i[1],type = 'LMT'))
             else:
-                lmts.append(book.order_enter('SELL',5,price = i[1],type = 'LMT'))
-        
-        time_step = int(t)
+                lmts.append(book.order_enter('SELL',vol_lmt,price = i[1],type = 'LMT'))
+
         dict_book[time_step] = book.generate_book()
         dict_om[time_step] =  pd.DataFrame(msgs,columns = [' Market Orders'])
         dict_lm[time_step] = pd.DataFrame(lmts,columns = ['Limit Orders'])
@@ -63,10 +66,10 @@ def main_loop(time,num_market = 50, num_limit = 50,display_live = False ):
     return dict_book,dict_lm,dict_om   
 
         
+    
 
-
-def GUI_construct(time,display_live = False):
-    a,b,c = main_loop(time)
+def GUI_construct(**kwargs):
+    a,b,c = main_loop(**kwargs)
     def view_book_time(time_step=0):
         return HTML(a[time_step])
 
@@ -92,7 +95,54 @@ def GUI_construct(time,display_live = False):
             display(lmt)
         return display(widgets.HBox([book_out,msg_out,lmt_out]))    
 
-    
-    w = widgets.IntSlider(min = 0, max = time,step =1)
+    time = kwargs['time']
+    w = widgets.IntSlider(min = 0, max = time,step =1,description='Time Step:')
     master_widget = widgets.interactive(master,time_step=w)
-    return display(master_widget)
+    return master_widget
+
+
+def setting_panels():
+    time_setting = widgets.IntText(value=7,description='Time:', disabled=False)
+    lambda_market_setting = widgets.IntText(value=7,description='Lambda:', disabled=False)
+    market_volume_setting = widgets.IntText(value=7,description='Vol per Order:', disabled=False)
+    lambda_limit_setting = widgets.IntText(value=7,description='Lambda:', disabled=False)
+    limit_volume_setting = widgets.IntText(value=7,description='Vol per Order:', disabled=False)
+    
+    gen_button = widgets.Button(description = "Generate Q Book", disabled = False)
+    
+    def generate_q_book(b):
+        settings = {'time':time_setting.value ,'lambda_market': time_setting.value, \
+                    'vol_mkt': time_setting.value,'lambda_limit':time_setting.value,  'vol_lmt' :time_setting.value}
+        clear_output()
+        display(gen_button)
+        return display(GUI_construct(**settings))
+    
+    gen_button.on_click(generate_q_book)
+    time_gen = widgets.Box([time_setting])
+    mkt_set = widgets.VBox(([lambda_market_setting,market_volume_setting]))
+    lmt_set = widgets.VBox(([lambda_limit_setting,limit_volume_setting]))
+    
+    out_left = widgets.Output()
+    out_middle = widgets.Output()
+    out_right = widgets.Output()
+    
+    bottom = widgets.Output()
+    with bottom:
+        display(gen_button)
+    
+    with out_left:
+        display(HTML('<b>Generate<b/>'))
+        display(time_gen)
+    
+    with out_middle:
+        display(HTML('<b>Market Settings</b>'))
+        display(mkt_set)
+    
+    with out_right:
+        display(HTML('<b>Limit Settings</b>'))
+        display(lmt_set)
+    
+    master_top = widgets.HBox([out_left,out_middle,out_right])
+    master = widgets.VBox([master_top,bottom])
+    
+    return master

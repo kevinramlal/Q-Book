@@ -46,13 +46,13 @@ def market_dir(n):
 
 
 ######SIMPLY ORDER ENTRY - MODEL 1 
-def market_order_poisson(num_orders,time,lambda_ = 0.25,q = 5):
+def market_order_poisson(time,lambda_ = 0.25,q = 5):
     """
     time - max length of time for trading
     q - standardized amount per market order (default to 5)
     lambda_ - acverage mkt orders per second
     """
-
+    num_orders = time*lambda_
     #step1: generate poisson arrival times, standardize by time
     arrival_time = poisson_sim(0.25,num_orders) #make 100 a parameter 
     arrival_time = list(map(math.ceil,arrival_time/max(arrival_time)*time))
@@ -66,7 +66,7 @@ def market_order_poisson(num_orders,time,lambda_ = 0.25,q = 5):
         m_orders[k].append(v)
     return m_orders
 
-def limit_order_poisson(num_orders,time,lambda_,q,bid_sched,ask_sched):
+def limit_order_poisson(time,lambda_,q,bid_sched,ask_sched):
     """
     Poisson process of submitting limit orders-independent
     limit order submission at any level at equal probability
@@ -75,6 +75,7 @@ def limit_order_poisson(num_orders,time,lambda_,q,bid_sched,ask_sched):
     - bid_sched: initial bid price schedule
     - ask_sched: initial ask price schedule
     """
+    num_orders = time*lambda_
     arrival_time = poisson_sim(0.1,num_orders)
     arrival_time = list(map(math.ceil,arrival_time/max(arrival_time)*time))
 

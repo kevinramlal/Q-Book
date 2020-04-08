@@ -42,8 +42,8 @@ class Book:
         Always show the top 10 - if none then it should be 0
         """
 
-        ask_side = self.ask_side
-        bid_side = self.bid_side
+        ask_side = self.ask_side.copy()
+        bid_side = self.bid_side.copy()
 
         #remove empty portions
         # ask_side = {k:v for k,v in ask_side.items() if np.sum(v) != 0}
