@@ -70,7 +70,7 @@ class Book:
         ask_total = pd.Series([sum(ask_side[k].values()) for k in ask_side.keys()])
 
         levels = max(len(bids),len(asks))
-        book_gen['Level'] = np.arange(1,levels,1)
+        book_gen['Level'] = np.arange(1,levels+1,1)
 
         book_gen['Bids'] = bids
         book_gen['Bid_Vol'] = bid_vols
@@ -78,6 +78,7 @@ class Book:
         book_gen['Asks'] = asks
         book_gen['Ask_Vols'] = ask_vols
         book_gen['Ask Total'] = ask_total
+        book_gen = book_gen[['Level','Bid_Vol','Bid Total','Bids','Asks','Ask Total','Ask_Vols']]
         self.book = book_gen
         return book_gen.to_html(index = None)
         
