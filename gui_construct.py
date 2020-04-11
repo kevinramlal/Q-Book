@@ -93,7 +93,9 @@ def GUI_construct(**kwargs):
             display(msg)
         with lmt_out:
             display(lmt)
-        return display(widgets.HBox([book_out,msg_out,lmt_out]))    
+        message_box = widgets.HBox([msg_out,lmt_out])
+        
+        return display(widgets.VBox([book_out, message_box]))    
 
     time = kwargs['time']
     w = widgets.IntSlider(min = 0, max = time,step =1,description='Time Step:')
@@ -111,8 +113,8 @@ def setting_panels():
     gen_button = widgets.Button(description = "Generate Q Book", disabled = False)
     
     def generate_q_book(b):
-        settings = {'time':time_setting.value ,'lambda_market': time_setting.value, \
-                    'vol_mkt': time_setting.value,'lambda_limit':time_setting.value,  'vol_lmt' :time_setting.value}
+        settings = {'time':time_setting.value ,'lambda_market': lambda_market_setting.value, \
+                    'vol_mkt': market_volume_setting.value,'lambda_limit':lambda_limit_setting.value,  'vol_lmt' :limit_volume_setting.value}
         clear_output()
         display(gen_button)
         return display(GUI_construct(**settings))
