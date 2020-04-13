@@ -6,7 +6,7 @@ import pandas as pd
 import statsmodels as sm
 import random
 import math
-from collections import defaultdict
+from collections import defaultdict, Counter
 from scipy.stats import bernoulli
 
 #----we want to simulate a poisson process
@@ -98,19 +98,19 @@ def limit_order_poisson(time,lambda_,q,book):
         m_orders[k].append(v)
     return m_orders
 
-def cancel_order_poisson(time,lambda_,book):
+def poisson_arrival(time,lambda_):
     """
-    Poisson process of submitting limit orders-independent
-    limit order submission at any level at equal probability
-
-    same params as in market order with addition of :
-    - bid_sched: initial bid price schedule
-    - ask_sched: initial ask price schedule
+    Poisson Arrival
     """
-    num_orders = time*lambda_
+    num_orders = time*int(lambda_)
     arrival_time = poisson_sim(0.1,num_orders)
     arrival_time = list(map(math.ceil,arrival_time/max(arrival_time)*time))
-    
+    return Counter(arrival_time)
+
+def cancel_order_rand(book):
+    """
+    random selection of direction, level, and id for cancellation
+    """
     bid_side = book.bid_side.copy()
     ask_side = book.ask_side.copy()
 
@@ -120,38 +120,26 @@ def cancel_order_poisson(time,lambda_,book):
     #get id 
     
     #level
-    order_dir = market_dir(len(arrival_time))
-    level = []
-    id_list = []
-    flag = True
-    for i in order_dir:
-        if i:
-            while flag:
-                random_level  = np.random.choice(list(bid_side.keys())) #level
-                if len(bid_side[random_level]) != 0:
-                    break
+    
+    order_dir = bernoulli.rvs(0.5,size = 1)
+    if order_dir:
+        while True:
+            random_level  = np.random.choice(list(bid_side.keys())) #level
+            if len(bid_side[random_level]) != 0:
+                break
                     
-            id_choice = np.random.choice(list(bid_side[random_level].keys())) #id keys
+        id_choice = np.random.choice(list(bid_side[random_level].keys())) #id keys
+
+    else:
+        while True:
+            random_level  = np.random.choice(list(ask_side.keys()))
+            if len(ask_side[random_level]) != 0:
+                break
+        id_choice = np.random.choice(list(ask_side[random_level].keys()))
 
 
-        else:
-            while flag:
-                random_level  = np.random.choice(list(ask_side.keys()))
-                if len(ask_side[random_level]) != 0:
-                    break
-            id_choice = np.random.choice(list(ask_side[random_level].keys()))
 
-
-        level.append(random_level)
-        id_list.append(id_choice)
-        
-    id_level = list(zip(order_dir,level,id_list))
-    # limit_order = list(zip(order_dir,id_level))
-    capture = list(zip(arrival_time,id_level))
-    m_orders = defaultdict(list)
-    for k,v in capture:
-        m_orders[k].append(v)
-    return m_orders
+    return [order_dir,random_level,id_choice]
 
 
 #limit orders 

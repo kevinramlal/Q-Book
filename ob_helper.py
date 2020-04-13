@@ -80,7 +80,7 @@ class Book:
         book_gen['Ask Total'] = ask_total
         book_gen = book_gen[['Level','Bid_Vol','Bid Total','Bids','Asks','Ask Total','Ask_Vols']]
         self.book = book_gen
-        return book_gen.to_html(index = None)
+        return book_gen
         
     def display_book(self):
         self.book = self.generate_book()
@@ -179,6 +179,19 @@ class Book:
             self.ask_side[level][id_] = 0
             msg = 'ORDER ID: ' + str(id_) + ", TYPE: CANCEL, SIDE: ASK"
             return msg
+    
+    def book_mid(self):
+        book_ = self.generate_book()
+        try:
+            best_bid = float(book_[book_['Bid Total'] != 0]['Bids'].head(1))
+        except:
+            return 100
+        try:
+            best_offer = float(book_[book_['Ask Total'] != 0]['Asks'].head(1))
+        except:
+            return 100
+        
+        return float((best_bid + best_offer)/2)
 
 def generate_book(book):
     """
