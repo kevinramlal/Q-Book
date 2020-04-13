@@ -66,7 +66,7 @@ def market_order_poisson(time,lambda_ = 0.25,q = 5):
         m_orders[k].append(v)
     return m_orders
 
-def limit_order_poisson(time,lambda_,q,bid_sched,ask_sched):
+def limit_order_poisson(time,lambda_,q,book):
     """
     Poisson process of submitting limit orders-independent
     limit order submission at any level at equal probability
@@ -75,6 +75,8 @@ def limit_order_poisson(time,lambda_,q,bid_sched,ask_sched):
     - bid_sched: initial bid price schedule
     - ask_sched: initial ask price schedule
     """
+    bid_sched = book.bid_sched
+    ask_sched = book.ask_sched
     num_orders = time*lambda_
     arrival_time = poisson_sim(0.1,num_orders)
     arrival_time = list(map(math.ceil,arrival_time/max(arrival_time)*time))
@@ -95,6 +97,62 @@ def limit_order_poisson(time,lambda_,q,bid_sched,ask_sched):
     for k,v in capture:
         m_orders[k].append(v)
     return m_orders
+
+def cancel_order_poisson(time,lambda_,book):
+    """
+    Poisson process of submitting limit orders-independent
+    limit order submission at any level at equal probability
+
+    same params as in market order with addition of :
+    - bid_sched: initial bid price schedule
+    - ask_sched: initial ask price schedule
+    """
+    num_orders = time*lambda_
+    arrival_time = poisson_sim(0.1,num_orders)
+    arrival_time = list(map(math.ceil,arrival_time/max(arrival_time)*time))
+    
+    bid_side = book.bid_side.copy()
+    ask_side = book.ask_side.copy()
+
+
+    #get level
+    #get side
+    #get id 
+    
+    #level
+    order_dir = market_dir(len(arrival_time))
+    level = []
+    id_list = []
+    flag = True
+    for i in order_dir:
+        if i:
+            while flag:
+                random_level  = np.random.choice(list(bid_side.keys())) #level
+                if len(bid_side[random_level]) != 0:
+                    break
+                    
+            id_choice = np.random.choice(list(bid_side[random_level].keys())) #id keys
+
+
+        else:
+            while flag:
+                random_level  = np.random.choice(list(ask_side.keys()))
+                if len(ask_side[random_level]) != 0:
+                    break
+            id_choice = np.random.choice(list(ask_side[random_level].keys()))
+
+
+        level.append(random_level)
+        id_list.append(id_choice)
+        
+    id_level = list(zip(order_dir,level,id_list))
+    # limit_order = list(zip(order_dir,id_level))
+    capture = list(zip(arrival_time,id_level))
+    m_orders = defaultdict(list)
+    for k,v in capture:
+        m_orders[k].append(v)
+    return m_orders
+
 
 #limit orders 
 #cancellations

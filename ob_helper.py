@@ -14,8 +14,8 @@ class Book:
     """
     def __init__(self,mid):
         self.mid = mid
-        self.bid_side = self.bid_side_gen() #think of these as queues 
-        self.ask_side = self.ask_side_gen()
+        self.bid_side_gen() #think of these as queues 
+        self.ask_side_gen()
         self.book = self.generate_book()
     
     def bid_side_gen(self):
@@ -28,7 +28,7 @@ class Book:
         self.bid_vol_sched = [int(100 - 10*i) for i in range(10)] #exponentially decreasing vol sched
         self.bid_vol_dict = [{i*1000:self.bid_vol_sched[i-1]} for i in range(1,len(self.bid_vol_sched)+1,1)]
         # return defaultdict(list,(zip(self.bid_sched,self.bid_vol_sched)))
-        return defaultdict(dict,(zip(self.bid_sched,self.bid_vol_dict)))      
+        self.bid_side =  defaultdict(dict,(zip(self.bid_sched,self.bid_vol_dict)))      
 
     def ask_side_gen(self):
         """
@@ -38,7 +38,7 @@ class Book:
         self.ask_sched = [self.mid+0.01*i for i in range(1,11,1)] #10 levels deep
         self.ask_vol_sched = [int(100 - 10*i) for i in range(10)] #exponentially decreasing vol sched
         self.ask_vol_dict = [{-i*1000:self.ask_vol_sched[i-1]} for i in range(1,len(self.ask_vol_sched)+1,1)]
-        return defaultdict(list,(zip(self.ask_sched,self.ask_vol_dict)))
+        self.ask_side =  defaultdict(dict,(zip(self.ask_sched,self.ask_vol_dict)))
 
     def generate_book(self):
         """
@@ -122,6 +122,7 @@ class Book:
                 
                 msg = "ORDER ID: " + str(id) + ", ACTION: BUY,  AMOUNT: " + str(amount) + ", PRICE: " + str(price)
                 return msg
+            
             else:
                 print("Please enter value type: either 'MKT' or 'LMT'")
                 return None
@@ -157,7 +158,7 @@ class Book:
                 self.ask_side[price][id] = amount
                 
                 
-                msg = "ORDER ID: " + str(id) + ", TYPE: SELL ,  AMOUNT: " + str(amount) + ", PRICE: " + str(price)
+                msg = "ORDER ID: " + str(id) + ", TYPE: SELL,  AMOUNT: " + str(amount) + ", PRICE: " + str(price)
                 return msg
 
             
@@ -169,6 +170,15 @@ class Book:
             print("Please enter a valid Action: either 'BUY' or 'SELL'")
             return None
 
+    def cancel_order(self,dir_,level,id_):
+        if dir_:
+            self.bid_side[level][id_] = 0
+            msg = 'ORDER ID: ' + str(id_) + ", TYPE: CANCEL, SIDE: BID"
+            return msg
+        else:
+            self.ask_side[level][id_] = 0
+            msg = 'ORDER ID: ' + str(id_) + ", TYPE: CANCEL, SIDE: ASK"
+            return msg
 
 def generate_book(book):
     """

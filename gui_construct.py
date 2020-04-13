@@ -23,28 +23,37 @@ def main_loop(time , lambda_market, vol_mkt,  lambda_limit, vol_lmt):
     dict_book = defaultdict(pd.DataFrame)
     dict_lm = {}
     dict_om = {}
+    dict_cnl = {}
 
     #initialize market_orders
     market_orders = market_order_poisson(time, lambda_market,vol_mkt)
 
     #need to find a way to standardize inputs 
-    limit_orders = limit_order_poisson(time,lambda_limit,vol_lmt,book.bid_sched,book.ask_sched)
+    limit_orders = limit_order_poisson(time,lambda_limit,vol_lmt,book)
+    
+    #cancellations
+    
 
    
     msgs = []
     lmts = []
+    cncls = []
 
     time_step = 0
     dict_book[time_step] =  book.generate_book()
     dict_om[time_step] =  pd.DataFrame(msgs,columns = [' Market Orders'])
     dict_lm[time_step] = pd.DataFrame(lmts,columns = ['Limit Orders'])
+    dict_cnl[time_step] = pd.DataFrame(cncls,columns = ['Cancels'])
     
     for t in range(1,time+1,1) :
         time_step = int(t)
         m_orders = market_orders[time_step]
         l_orders = limit_orders[time_step]
+        cancels = cancel_order_poisson(1, lambda_limit, book)
+        c_orders = cancels[time_step]
         msgs = []
         lmts = []
+        cnl = []
 
         #Market Orders
         for i in m_orders:
@@ -58,42 +67,57 @@ def main_loop(time , lambda_market, vol_mkt,  lambda_limit, vol_lmt):
                 lmts.append(book.order_enter('BUY',vol_lmt,price = i[1],type = 'LMT'))
             else:
                 lmts.append(book.order_enter('SELL',vol_lmt,price = i[1],type = 'LMT'))
+        
+        for i in c_orders:
+            cnl.append(book.cancel_order(i[0],i[1],i[2]))
+
+
+
 
         dict_book[time_step] = book.generate_book()
         dict_om[time_step] =  pd.DataFrame(msgs,columns = [' Market Orders'])
         dict_lm[time_step] = pd.DataFrame(lmts,columns = ['Limit Orders'])
+        dict_cnl[time_step] = pd.DataFrame(cnl,columns = ['Cancels'])
 
-    return dict_book,dict_lm,dict_om   
+    return dict_book,dict_lm,dict_om, dict_cnl 
 
         
     
 
 def GUI_construct(**kwargs):
-    a,b,c = main_loop(**kwargs)
+    book_dict,lmt_dict,om_dict,dict_cnl = main_loop(**kwargs)
     def view_book_time(time_step=0):
-        return HTML(a[time_step])
+        return HTML(book_dict[time_step])
 
     def view_msg_time(time_step=0):
-        return HTML(c[time_step].to_html(index = None))
+        return HTML(om_dict[time_step].to_html(index = None))
     
     def view_lmt_time(time_step=0):
-        return HTML(b[time_step].to_html(index = None))
+        return HTML(lmt_dict[time_step].to_html(index = None))
+    
+    def view_cnl_time(time_step = 0):
+        return HTML(dict_cnl[time_step].to_html(index = None))
         
         
     def master(time_step = 0):
         book = view_book_time(time_step)
         msg = view_msg_time(time_step)
         lmt = view_lmt_time(time_step)
+        cnl = view_cnl_time(time_step)
+        
         book_out = widgets.Output()
         msg_out = widgets.Output()
         lmt_out = widgets.Output()
+        cnl_out = widgets.Output()
         with book_out:
             display(book)
         with msg_out:
             display(msg)
         with lmt_out:
             display(lmt)
-        message_box = widgets.HBox([msg_out,lmt_out])
+        with cnl_out:
+            display(cnl)
+        message_box = widgets.HBox([msg_out,lmt_out,cnl_out])
         
         return display(widgets.VBox([book_out, message_box]))    
 
