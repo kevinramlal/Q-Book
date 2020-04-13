@@ -2,5 +2,4 @@ matplotlib==3.*
 pandas
 ipywidgets
 statsmodels
-time
 scipy
