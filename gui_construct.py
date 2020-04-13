@@ -157,7 +157,7 @@ def GUI_construct(**kwargs):
         message_box = widgets.HBox([msg_out,lmt_out,cnl_out])
         mid_box = widgets.Box([mid_out])
         
-        return display(widgets.VBox([book_out, message_box, mid_box, mid_graph]))    
+        return display(widgets.VBox([book_out, mid_box, mid_graph, message_box]))    
 
     time = kwargs['time']
     w = widgets.IntSlider(min = 0, max = time,step =1,description='Time Step:')
