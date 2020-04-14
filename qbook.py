@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Apr 14 00:31:33 2020
+
+@author: kevin
+"""
+
 #Gui Helper
 import pandas as pd
 import numpy as np
@@ -117,30 +124,41 @@ def GUI_construct(**kwargs):
         return mid_select
 
         
-    def master(time_step = 0):
+    def book_display(time_step = 0):
         book = view_book_time(time_step)
+        book_out = widgets.Output()
+        with book_out:
+            display(HTML("<b> Q-BOOK </b>"))
+            display(book)
+        return display(book_out)
+        
+    def messages_display(time_step = 0):
         msg = view_msg_time(time_step)
         lmt = view_lmt_time(time_step)
         cnl = view_cnl_time(time_step)
-        mids = view_mid_time(time_step)
-        mid_select = view_mid_graph(time_step)
-        
-        book_out = widgets.Output()
         msg_out = widgets.Output()
         lmt_out = widgets.Output()
         cnl_out = widgets.Output()
-        mid_out = widgets.Output()
-        mid_graph = widgets.Output()
-        
-        
-        with book_out:
-            display(book)
+
         with msg_out:
             display(msg)
         with lmt_out:
             display(lmt)
         with cnl_out:
             display(cnl)
+            
+        message_box = widgets.HBox([msg_out,lmt_out,cnl_out])
+
+        return display(message_box)
+    
+    def mid_graph(time_step = 0):
+        mids = view_mid_time(time_step)
+        mid_select = view_mid_graph(time_step)
+        
+
+        mid_out = widgets.Output()
+        mid_graph = widgets.Output()
+        
         with mid_out:
             display(HTML('MID'))
             display(mids)
@@ -154,15 +172,17 @@ def GUI_construct(**kwargs):
             _= plt.xticks(x)
             plt.show()
             
-        message_box = widgets.HBox([msg_out,lmt_out,cnl_out])
-        mid_box = widgets.Box([mid_out])
+
+        mid_box = widgets.VBox([mid_out,mid_graph])
         
-        return display(widgets.VBox([book_out, mid_box, mid_graph, message_box]))    
+        return display(mid_box)
 
     time = kwargs['time']
     w = widgets.IntSlider(min = 0, max = time,step =1,description='Time Step:')
-    master_widget = widgets.interactive(master,time_step=w)
-    return master_widget
+    book_widget = widgets.interactive(book_display,time_step=w)
+    msg_widget = widgets.interactive(messages_display,time_step=w)
+    mid_widget = widgets.interactive(mid_graph,time_step=w)
+    return w,book_widget,msg_widget,mid_widget
 
 
 def setting_panels():
@@ -180,7 +200,7 @@ def setting_panels():
                         'vol_lmt' :limit_volume_setting.value, 'lambda_cancel': lambda_cancel_setting.value}
         clear_output()
         display(gen_button)
-        return display(GUI_construct(**settings))
+        return display(QBook(**settings))
     
     gen_button.on_click(generate_q_book)
     time_gen = widgets.Box([time_setting])
@@ -193,13 +213,12 @@ def setting_panels():
     out_right = widgets.Output()
     out_far = widgets.Output()
     
-    bottom = widgets.Output()
-    with bottom:
-        display(gen_button)
+    
     
     with out_left:
-        display(HTML('<b>Generate<b/>'))
+        display(HTML('<b>Time Steps<b/>'))
         display(time_gen)
+
     
     with out_middle:
         display(HTML('<b>Market Settings</b>'))
@@ -214,14 +233,29 @@ def setting_panels():
         display(cnl_set)
     
     master_settings = widgets.HBox([out_left,out_middle,out_right, out_far])
-    master = widgets.VBox([bottom,master_settings])
-    
-    return master
 
-def QBook():
+    
+    return master_settings,gen_button
+
+def_settings = {'time':30 ,'lambda_market': 2, 'vol_mkt': 10,'lambda_limit':2,'vol_lmt' :20, 'lambda_cancel': 2}
+def QBook(**settings):
     """
     1. Generate Q_book with time_step linkage
     2. Generate Tabs: Settings, Messages, Price Movement
     """
-    
-    
+    slider, book_w,messages_w, mid_w = GUI_construct(**settings)
+    settings,gen_button = setting_panels()
+    top = widgets.Box([book_w])
+    tab_master = widgets.Tab(titles = ['Settings','Message Log','Mid Price Graph'])
+    children = [settings,messages_w,mid_w]
+    tab_master.children = children
+    labels = ['Settings','Message Log','Mid Price Graph']
+    for i,l in enumerate(labels):
+        tab_master.set_title(i, l)
+    full = widgets.VBox([top,tab_master])
+    return full
+
+def QBook_GUI():
+    settings,gen_button = setting_panels()
+    display(gen_button)
+    return display(QBook(**def_settings))
