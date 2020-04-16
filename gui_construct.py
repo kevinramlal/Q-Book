@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np
 from ob_helper import * 
 from stochastic_process_helper import *
-import time as t
 from IPython.display import display,HTML
 from IPython.display import clear_output
 import ipywidgets as widgets 
@@ -14,7 +13,8 @@ default = {'time':30 ,'lambda_market': 2, 'vol_mkt': 10, 'lambda_limit':5,  'vol
 
 # class Q_Book():
 #     default = {'time':30 ,'num_market':50, 'lambda_market': 0.25, 'vol_mkt': 10, 'num_limit': 50, 'lambda_limit':0.25,  'vol_lmt' :10}
-def poisson_book(time , lambda_market, vol_mkt,  lambda_limit, vol_lmt, lambda_cancel):
+def poisson_book(time , lambda_market, vol_mkt,  \
+                 lambda_limit, vol_lmt, lambda_cancel):
     """
     gui display
     """

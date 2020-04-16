@@ -114,9 +114,15 @@ class Book:
                 # SECTION FOR DICTIONARY RETURN 
                 id = list(self.bid_side[price].keys())[-1] 
                 if id == 'MM': #Market Making Algo ID
-                    id = list(self.bid_side[price].keys)[-2]
+                    id = id2 = int(list(self.bid_side[price].keys())[-2])
+                    # print(id,id2)
                 
-                id += 1
+                try:
+                    id += 1
+                    # print(id)
+                except:
+                    # print(id)
+                    id = 1000 #this is a bug
                 self.bid_side[price][id] = amount
                 
                 
@@ -152,9 +158,14 @@ class Book:
             elif type =='LMT':
                 id = list(self.ask_side[price].keys())[-1] 
                 if id == 'MM': #Market Making Algo ID
-                    id = list(self.ask_side[price].keys)[-2]
+                    id = id2 = int(list(self.ask_side[price].keys())[-2])
                 
-                id -= 1
+                try:
+                    id -= 1
+                    # print(id)
+                except:
+                    # print(id)
+                    id = -1000
                 self.ask_side[price][id] = amount
                 
                 
@@ -192,7 +203,30 @@ class Book:
             return 100
         
         return float((best_bid + best_offer)/2)
-
+    
+    ### Simple Market Maker Orders
+    
+    def mm_simple_init(self,amt=25):
+        self.bid_side[self.mid -0.01]['MM'] = amt
+        self.ask_side[self.mid +0.01]['MM'] = amt
+    
+    def mm_algo(self,amt=25):
+        inv_adj = [0]
+        top_bid = self.bid_side[self.mid - 0.01]
+        top_ask = self.ask_side[self.mid + 0.01]
+    
+        if top_bid['MM'] == 0:
+            inv_adj.append(1)
+            self.bid_side[self.mid -0.01]['MM'] = amt
+            
+    
+        if top_ask['MM'] == 0:
+            inv_adj.append(-1)
+            self.ask_side[self.mid +0.01]['MM'] = amt
+        
+        return np.array(inv_adj)
+        
+                
 def generate_book(book):
     """
     Always show the top 10 - if none then it should be 0
@@ -232,5 +266,6 @@ def generate_book(book):
 
 
 
+        
 
 
